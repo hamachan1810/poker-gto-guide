@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>テキサスホールデム GTO入門ガイド</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@300;400;700&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #161a22;
+    --surface2: #1e2330;
+    --border: #2a3045;
+    --gold: #c9a84c;
+    --gold-light: #f0d080;
+    --red: #e05252;
+    --green: #4caf82;
+    --blue: #5b8dee;
+    --orange: #e07c3a;
+    --gray: #8892a4;
+    --text: #e8eaf0;
+    --text-dim: #6b7585;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .hero {
+    background: linear-gradient(160deg, #1a1e2e 0%, #0d0f14 60%);
+    border-bottom: 1px solid var(--border);
+    padding: 36px 20px 28px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '♠♥♦♣';
+    position: absolute;
+    top: 10px; left: 50%; transform: translateX(-50%);
+    font-size: 11px;
+    letter-spacing: 12px;
+    color: var(--border);
+  }
+  .hero h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(28px, 7vw, 48px);
+    letter-spacing: 3px;
+    color: var(--gold-light);
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+  .hero p {
+    color: var(--gray);
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+
+  /* Nav tabs */
+  .tabs {
+    display: flex;
+    overflow-x: auto;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    scrollbar-width: none;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex-shrink: 0;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--gray);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .tab.active {
+    color: var(--gold);
+    border-bottom-color: var(--gold);
+  }
+
+  /* Sections */
+  .section { display: none; padding: 20px 16px 40px; max-width: 600px; margin: 0 auto; }
+  .section.active { display: block; }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 1.5px;
+    color: var(--gold);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .icon { font-size: 18px; }
+
+  /* Badge */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .badge-red { background: rgba(224,82,82,0.15); color: var(--red); border: 1px solid rgba(224,82,82,0.3); }
+  .badge-orange { background: rgba(224,124,58,0.15); color: var(--orange); border: 1px solid rgba(224,124,58,0.3); }
+  .badge-yellow { background: rgba(201,168,76,0.15); color: var(--gold); border: 1px solid rgba(201,168,76,0.3); }
+  .badge-green { background: rgba(76,175,130,0.15); color: var(--green); border: 1px solid rgba(76,175,130,0.3); }
+  .badge-blue { background: rgba(91,141,238,0.15); color: var(--blue); border: 1px solid rgba(91,141,238,0.3); }
+
+  /* Position indicator */
+  .pos-bar {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .pos-item {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--surface2);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+  .pos-item.current {
+    background: var(--gold);
+    color: #000;
+    border-color: var(--gold);
+  }
+
+  /* Hand grid */
+  .hand-group { margin-bottom: 12px; }
+  .hand-group-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .hand-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .hand-tag {
+    padding: 4px 9px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: monospace;
+  }
+  .tag-premium { background: rgba(201,168,76,0.2); color: var(--gold-light); border: 1px solid rgba(201,168,76,0.4); }
+  .tag-good { background: rgba(76,175,130,0.15); color: var(--green); border: 1px solid rgba(76,175,130,0.3); }
+  .tag-marginal { background: rgba(91,141,238,0.12); color: var(--blue); border: 1px solid rgba(91,141,238,0.25); }
+  .tag-no { background: rgba(224,82,82,0.1); color: var(--red); border: 1px solid rgba(224,82,82,0.2); text-decoration: line-through; opacity: 0.6; }
+
+  /* Rule blocks */
+  .rule {
+    background: var(--surface2);
+    border-left: 3px solid var(--gold);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 14px;
+    margin: 10px 0;
+    font-size: 13px;
+  }
+  .rule.red { border-left-color: var(--red); }
+  .rule.green { border-left-color: var(--green); }
+  .rule.blue { border-left-color: var(--blue); }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    min-width: 280px;
+  }
+  th {
+    background: var(--surface2);
+    color: var(--gold);
+    padding: 9px 10px;
+    text-align: left;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+  /* Stack meter */
+  .stack-meter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 6px 0;
+  }
+  .stack-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .stack-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--red), var(--gold), var(--green));
+    transition: width 0.5s ease;
+  }
+  .stack-label { font-size: 11px; color: var(--gray); width: 70px; text-align: right; }
+
+  /* Glossary */
+  .glossary-item {
+    border-bottom: 1px solid var(--border);
+    padding: 12px 0;
+  }
+  .glossary-item:last-child { border-bottom: none; }
+  .glossary-term {
+    font-weight: 700;
+    color: var(--gold);
+    font-size: 13px;
+    margin-bottom: 3px;
+    font-family: monospace;
+  }
+  .glossary-def {
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  /* Summary boxes */
+  .summary-box {
+    background: linear-gradient(135deg, var(--surface2), var(--surface));
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .summary-box::after {
+    content: attr(data-icon);
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 36px;
+    opacity: 0.08;
+  }
+
+  .tag-ok { color: var(--green); font-weight: 700; }
+  .tag-ng { color: var(--red); font-weight: 700; }
+  .tag-check { color: var(--orange); font-weight: 700; }
+
+  /* Position selector */
+  .pos-selector {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .pos-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 4px 8px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gray);
+    font-family: "Noto Sans JP", sans-serif;
+    transition: all 0.2s;
+  }
+  .pos-btn:active { transform: scale(0.95); }
+  .pos-btn.active {
+    background: var(--surface);
+    border-color: var(--gold);
+    color: var(--gold-light);
+  }
+  .pos-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    opacity: 0.5;
+  }
+  .pos-btn.active .pos-dot { opacity: 1; }
+
+  /* Legend */
+  .range-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding: 8px 10px;
+    background: var(--surface2);
+    border-radius: 8px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--gray);
+    font-weight: 700;
+  }
+  .legend-dot {
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  /* Pos info bar */
+  .pos-info-bar {
+    background: var(--surface2);
+    border-left: 3px solid var(--gold);
+    border-radius: 0 8px 8px 0;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+  }
+  .pos-info-name {
+    font-family: "Bebas Neue", sans-serif;
+    font-size: 17px;
+    letter-spacing: 1.5px;
+    color: var(--gold-light);
+    margin-bottom: 2px;
+  }
+  .pos-info-name span {
+    font-family: "Noto Sans JP", sans-serif;
+    font-size: 11px;
+    color: var(--gray);
+    font-weight: 400;
+    letter-spacing: 0;
+    margin-left: 4px;
+  }
+  .pos-info-rate {
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .pos-info-tip {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  /* Tip block */
+  .pos-tip-block {
+    margin-top: 12px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, var(--surface2), var(--surface));
+    border: 1px solid var(--gold);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--gold-light);
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.3px;
+  }
+
+  /* Range table */
+  .range-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
+  }
+  .range-table {
+    border-collapse: separate;
+    border-spacing: 2px;
+    width: 100%;
+    min-width: 340px;
+  }
+  .range-table td {
+    width: calc(100% / 13);
+    aspect-ratio: 1;
+    text-align: center;
+    vertical-align: middle;
+    font-size: clamp(8px, 2.2vw, 12px);
+    font-weight: 700;
+    border-radius: 4px;
+    padding: 0;
+    line-height: 1;
+    transition: opacity 0.25s, background 0.25s;
+    background: #2a3045;
+    color: #6b7585;
+    cursor: default;
+    white-space: nowrap;
+  }
+  .range-table td.r-premium { background: #b8922a; color: #fff; }
+  .range-table td.r-ok      { background: #2e7d56; color: #fff; }
+  .range-table td.r-3bet    { background: #2d5fa8; color: #fff; }
+  .range-table td.r-marginal{ background: #9a5a1a; color: #fff; }
+  .range-table td.r-fold    { background: #1e2330; color: #3a4255; }
+
+  /* Hand category blocks */
+
+  .hand-category {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .hand-category-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+  .hand-category-label.pocket {
+    background: rgba(201,168,76,0.15);
+    color: var(--gold);
+    border: 1px solid rgba(201,168,76,0.3);
+  }
+  .hand-category-label.suited {
+    background: rgba(91,141,238,0.15);
+    color: var(--blue);
+    border: 1px solid rgba(91,141,238,0.3);
+  }
+  .hand-category-label.offsuit {
+    background: rgba(224,82,82,0.12);
+    color: #e08888;
+    border: 1px solid rgba(224,82,82,0.25);
+  }
+  .hand-rows { display: flex; flex-direction: column; gap: 6px; }
+  .hand-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .hand-row-label {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    margin-top: 2px;
+    min-width: 36px;
+    text-align: center;
+  }
+  .hand-row-label.ok {
+    background: rgba(76,175,130,0.15);
+    color: var(--green);
+    border: 1px solid rgba(76,175,130,0.3);
+  }
+  .hand-row-label.ng {
+    background: rgba(224,82,82,0.12);
+    color: var(--red);
+    border: 1px solid rgba(224,82,82,0.25);
+  }
+  .hand-row-label.check {
+    background: rgba(224,124,58,0.15);
+    color: var(--orange);
+    border: 1px solid rgba(224,124,58,0.3);
+  }
+
+  h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 2px;
+    color: var(--gold-light);
+    margin: 20px 0 12px;
+  }
+  h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 14px 0 8px;
+    letter-spacing: 0.5px;
+  }
+  p { font-size: 13px; color: var(--text); line-height: 1.75; margin-bottom: 8px; }
+  ul { padding-left: 18px; }
+  li { font-size: 13px; margin-bottom: 4px; line-height: 1.6; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 16px 0;
+  }
+  .note {
+    font-size: 12px;
+    color: var(--gray);
+    background: rgba(255,255,255,0.03);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-top: 8px;
+    line-height: 1.6;
+  }
+
+  /* open rate pill */
+  .open-rate {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+  .open-rate span { color: var(--gold); font-weight: 700; font-size: 14px; }
+
+  /* Stack selector */
+  .stack-selector {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .stack-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 6px 10px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-family: "Noto Sans JP", sans-serif;
+    transition: all 0.2s;
+  }
+  .stack-btn:active { transform: scale(0.97); }
+  .stack-btn.active {
+    background: var(--surface);
+    border-color: var(--sc, var(--gold));
+    box-shadow: 0 0 0 1px var(--sc, var(--gold));
+  }
+  .stack-btn-icon { font-size: 20px; }
+  .stack-btn-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .stack-btn-sub {
+    font-size: 10px;
+    color: var(--gray);
+  }
+  .stack-btn.active .stack-btn-label { color: var(--gold-light); }
+
+  /* Stack table */
+  .stack-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 16px;
+    border-radius: 8px;
+  }
+  .stack-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    min-width: 300px;
+  }
+  .stack-table th {
+    background: var(--surface2);
+    color: var(--gray);
+    padding: 9px 8px;
+    text-align: center;
+    font-weight: 700;
+    border-bottom: 2px solid var(--border);
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  .stack-table th span { color: var(--text-dim); font-weight: 400; }
+  .stack-table th.active-col { color: var(--gold); border-bottom-color: var(--gold); }
+  .stack-table td {
+    padding: 9px 8px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    text-align: center;
+    font-size: 12px;
+    transition: opacity 0.2s;
+  }
+  .stack-table td.hand-cell {
+    text-align: left;
+    font-weight: 700;
+    color: var(--text);
+    font-size: 12px;
+    background: var(--surface2);
+  }
+  .stack-table td small { display:block; font-weight:400; color:var(--text-dim); font-size:10px; }
+  .stack-table tr:last-child td { border-bottom: none; }
+  .stack-table tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+  .stack-table tr:nth-child(even) td.hand-cell { background: var(--surface2); }
+
+  /* Stack cell colors */
+  .sc { font-weight: 700; border-radius: 4px; padding: 3px 6px; font-size: 11px; }
+  .sc-great   { background: rgba(201,168,76,0.2);  color: #f0d080; }
+  .sc-strong  { background: rgba(76,175,130,0.2);  color: #4caf82; }
+  .sc-ok      { background: rgba(91,141,238,0.15); color: #7aabff; }
+  .sc-caution { background: rgba(224,124,58,0.2);  color: #e07c3a; }
+  .sc-weak    { background: rgba(136,146,164,0.15);color: #8892a4; }
+  .sc-fold    { background: rgba(224,82,82,0.15);  color: #e05252; }
+
+  /* Highlight selected column */
+  .stack-table td.col-active { background: rgba(201,168,76,0.06) !important; }
+
+  /* Stack detail */
+  .stack-detail {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .stack-detail.hidden { display: none; }
+  .stack-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-left: 4px solid var(--gold);
+    padding-left: 12px;
+    margin-bottom: 12px;
+  }
+  .stack-detail-icon { font-size: 22px; }
+  .stack-detail-title {
+    font-family: "Bebas Neue", sans-serif;
+    font-size: 18px;
+    letter-spacing: 1.5px;
+    color: var(--gold-light);
+  }
+  .stack-detail-sub { font-size: 11px; color: var(--gray); margin-top: 1px; }
+  .stack-rule {
+    border-left: 3px solid var(--gold);
+    border-radius: 0 6px 6px 0;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.7;
+  }
+  .stack-list {
+    padding-left: 18px;
+    margin-bottom: 10px;
+  }
+  .stack-list li {
+    font-size: 13px;
+    margin-bottom: 6px;
+    line-height: 1.65;
+    color: var(--text);
+  }
+  .stack-tip {
+    font-size: 12px;
+    color: var(--gold-light);
+    font-weight: 700;
+    background: rgba(201,168,76,0.08);
+    border: 1px solid rgba(201,168,76,0.25);
+    border-radius: 8px;
+    padding: 10px 12px;
+    line-height: 1.6;
+  }
+
+  /* Push/Fold tab */
+  .pf-stack-selector {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  .pf-stack-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .pf-stack-btns {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 5px;
+  }
+  .pf-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 4px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gray);
+    cursor: pointer;
+    font-family: "Noto Sans JP", sans-serif;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .pf-btn:active { transform: scale(0.95); }
+  .pf-btn.active {
+    background: rgba(76,175,130,0.15);
+    border-color: #4caf82;
+    color: #4caf82;
+  }
+  .pf-pos-selector {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .pf-pos-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 4px 8px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gray);
+    font-family: "Noto Sans JP", sans-serif;
+    transition: all 0.2s;
+  }
+  .pf-pos-btn:active { transform: scale(0.95); }
+  .pf-pos-btn.active {
+    background: var(--surface);
+    border-color: var(--gold);
+    color: var(--gold-light);
+  }
+  .pf-pos-btn.active .pos-dot { opacity: 1; }
+  .range-table td.r-push { background: #2e7d56; color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Texas Hold'em<br>GTO入門ガイド</h1>
+  <p>GAME THEORY OPTIMAL — BEGINNER'S REFERENCE</p>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('positions')">ポジション別レンジ</div>
+  <div class="tab" onclick="showTab('stacks')">スタック戦略</div>
+  <div class="tab" onclick="showTab('pushfold')">Push/Fold</div>
+  <div class="tab" onclick="showTab('ranges')">レンジ思考</div>
+  <div class="tab" onclick="showTab('calls')">コール判断</div>
+  <div class="tab" onclick="showTab('glossary')">用語集</div>
+</div>
+
+<!-- ===== TAB 1: POSITIONS ===== -->
+<div id="tab-positions" class="section active">
+  <h2>ポジション別 参加ハンド</h2>
+  <p>ポジションをタップするとハンドレンジが色付きで表示されます。</p>
+
+  <!-- Position selector -->
+  <div class="pos-selector">
+    <button class="pos-btn active" data-pos="utg" onclick="switchPos(this,'utg')">
+      <span class="pos-dot" style="background:#e05252"></span>UTG
+    </button>
+    <button class="pos-btn" data-pos="mp" onclick="switchPos(this,'mp')">
+      <span class="pos-dot" style="background:#e07c3a"></span>MP
+    </button>
+    <button class="pos-btn" data-pos="co" onclick="switchPos(this,'co')">
+      <span class="pos-dot" style="background:#c9a84c"></span>CO
+    </button>
+    <button class="pos-btn" data-pos="btn" onclick="switchPos(this,'btn')">
+      <span class="pos-dot" style="background:#4caf82"></span>BTN
+    </button>
+    <button class="pos-btn" data-pos="sb" onclick="switchPos(this,'sb')">
+      <span class="pos-dot" style="background:#5b8dee"></span>SB
+    </button>
+    <button class="pos-btn" data-pos="bb" onclick="switchPos(this,'bb')">
+      <span class="pos-dot" style="background:#8892a4"></span>BB
+    </button>
+  </div>
+
+  <!-- Legend -->
+  <div class="range-legend">
+    <span class="legend-item"><span class="legend-dot" style="background:#c9a84c"></span>プレミアム</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#4caf82"></span>参加OK</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#5b8dee"></span>3ベット</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#e07c3a"></span>状況次第</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#2a3045"></span>フォールド</span>
+  </div>
+
+  <!-- Pos info bar -->
+  <div id="pos-info-bar" class="pos-info-bar">
+    <div id="pos-info-name" class="pos-info-name">🔴 UTG <span>アンダー・ザ・ガン</span></div>
+    <div id="pos-info-rate" class="pos-info-rate" style="color:#e05252">オープン率 〜15%</div>
+  </div>
+
+  <!-- Hand range grid -->
+  <div class="range-wrap">
+    <table class="range-table" id="range-table"></table>
+  </div>
+
+  <!-- Tip block -->
+  <div id="pos-tip-block" class="pos-tip-block"></div>
+
+</div>
+
+<!-- ===== TAB 2: STACKS ===== -->
+<div id="tab-stacks" class="section">
+  <h2>スタック別 戦略ガイド</h2>
+
+  <div class="rule" style="margin-bottom:14px;">
+    📌 <strong>エフェクティブスタック（実効スタック）</strong>とは？<br>
+    自分と相手のチップのうち<strong>少ない方</strong>で考えます。自分が200BBでも相手が80BBなら、実質80BBゲームです。
+  </div>
+
+  <!-- Stack selector -->
+  <div class="stack-selector">
+    <button class="stack-btn active" onclick="switchStack(this,'short')" style="--sc:#e05252">
+      <span class="stack-btn-icon">🔴</span>
+      <span class="stack-btn-label">ショート</span>
+      <span class="stack-btn-sub">〜40BB</span>
+    </button>
+    <button class="stack-btn" onclick="switchStack(this,'mid')" style="--sc:#c9a84c">
+      <span class="stack-btn-icon">🟡</span>
+      <span class="stack-btn-label">標準</span>
+      <span class="stack-btn-sub">40〜100BB</span>
+    </button>
+    <button class="stack-btn" onclick="switchStack(this,'deep')" style="--sc:#4caf82">
+      <span class="stack-btn-icon">🟢</span>
+      <span class="stack-btn-label">ディープ</span>
+      <span class="stack-btn-sub">150BB〜</span>
+    </button>
+  </div>
+
+  <!-- Legend (shared with positions tab) -->
+  <div class="range-legend">
+    <span class="legend-item"><span class="legend-dot" style="background:#c9a84c"></span>プレミアム</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#4caf82"></span>価値高い</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#5b8dee"></span>普通</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#e07c3a"></span>過信注意</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#2a3045"></span>旨みなし</span>
+  </div>
+
+  <!-- Stack info bar -->
+  <div id="stack-info-bar" class="pos-info-bar">
+    <div id="stack-info-name" class="pos-info-name">🔴 ショートスタック <span>〜40BB</span></div>
+    <div id="stack-info-rate" class="pos-info-rate" style="color:#e05252">プリフロップの判断がほぼ全て</div>
+  </div>
+
+  <!-- Hand range grid -->
+  <div class="range-wrap">
+    <table class="range-table" id="stack-range-table"></table>
+  </div>
+
+  <!-- Tip block -->
+  <div id="stack-tip-block" class="pos-tip-block"></div>
+
+  <!-- Strategy detail panels -->
+  <div class="stack-detail" id="stack-short">
+    <div class="stack-detail-header" style="border-color:#e05252">
+      <span class="stack-detail-icon">🔴</span>
+      <div>
+        <div class="stack-detail-title">ショートスタック戦略</div>
+        <div class="stack-detail-sub">〜40BB</div>
+      </div>
+    </div>
+    <div class="stack-rule" style="border-color:#e05252;background:rgba(224,82,82,0.08)">
+      戦略：<strong>今すぐ強い手</strong>で戦う<br>
+      オープン＝ほぼオールイン前提の判断
+    </div>
+    <ul class="stack-list">
+      <li>小さいペア・スーテッドコネクターは<span style="color:var(--red);font-weight:700">価値激減</span>（セットになっても回収できない）</li>
+      <li>AJo・KQoなど<span style="color:var(--green);font-weight:700">ブロードウェイハンドが相対的に強くなる</span></li>
+      <li>20BB以下では「Push/Foldチャート」を参照するのが実践的</li>
+    </ul>
+  </div>
+
+  <div class="stack-detail hidden" id="stack-mid">
+    <div class="stack-detail-header" style="border-color:#c9a84c">
+      <span class="stack-detail-icon">🟡</span>
+      <div>
+        <div class="stack-detail-title">標準スタック戦略</div>
+        <div class="stack-detail-sub">40〜100BB</div>
+      </div>
+    </div>
+    <div class="stack-rule" style="border-color:#c9a84c;background:rgba(201,168,76,0.08)">
+      戦略：<strong>教科書通り</strong>のGTOレンジで動く
+    </div>
+    <ul class="stack-list">
+      <li>ポジション別レンジタブのハンドレンジがそのまま使えます</li>
+      <li>最も一般的な状況。迷ったらこの基準に戻る</li>
+      <li>セットマイニングは採算が合う場面も出てくる（スタック/コール額が15倍以上）</li>
+    </ul>
+  </div>
+
+  <div class="stack-detail hidden" id="stack-deep">
+    <div class="stack-detail-header" style="border-color:#4caf82">
+      <span class="stack-detail-icon">🟢</span>
+      <div>
+        <div class="stack-detail-title">ディープスタック戦略</div>
+        <div class="stack-detail-sub">150BB〜</div>
+      </div>
+    </div>
+    <div class="stack-rule" style="border-color:#4caf82;background:rgba(76,175,130,0.08)">
+      戦略：<strong>ナッツになれる手</strong>を優遇する<br>
+      セット・フラッシュ・ストレート完成時に大量回収できる
+    </div>
+    <ul class="stack-list">
+      <li>小さいペア（22〜55）→ <span style="color:var(--green);font-weight:700">セットマイニングが有利</span>（スタック/コール額が15倍以上あれば採算合う）</li>
+      <li>スーテッドコネクター（87s、76s）→ <span style="color:var(--green);font-weight:700">価値大幅アップ</span></li>
+      <li>AJo・KQoなど1ペアどまりの手 → <span style="color:var(--orange);font-weight:700">大きなポットで危険</span></li>
+    </ul>
+  </div>
+
+  <!-- Effective stack quick ref -->
+  <h3 style="margin-top:20px;">エフェクティブスタック早見表</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>自分</th><th>相手</th><th>実効スタック</th><th>採用戦略</th></tr>
+      <tr><td>200BB</td><td>200BB</td><td><strong>200BB</strong></td><td>ディープ</td></tr>
+      <tr><td>200BB</td><td>80BB</td><td><strong>80BB</strong></td><td>標準</td></tr>
+      <tr><td>40BB</td><td>200BB</td><td><strong>40BB</strong></td><td>ショート</td></tr>
+      <tr><td>100BB</td><td>100BB</td><td><strong>100BB</strong></td><td>標準</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ===== TAB 3: RANGES ===== -->
+<div id="tab-ranges" class="section">
+  <h2>レンジ思考とは</h2>
+
+  <div class="summary-box" data-icon="🃏">
+    <h3>特定の手を当てようとしない</h3>
+    <p>初心者がよくやるのが「相手はAAを持ってる！」と1つのハンドを決め打ちすること。プロは違います。</p>
+    <div class="rule blue">✅「この人がこのアクションをするなら、どんな手の集まりを持っているか？」と<strong>幅で考える</strong>のがレンジ思考</div>
+  </div>
+
+  <h2>アクションからレンジを絞る</h2>
+
+  <div class="card">
+    <div class="card-title">プリフロップのアクション</div>
+    <div class="table-wrap">
+      <table>
+        <tr><th>アクション</th><th>推測レンジ</th></tr>
+        <tr><td>UTGオープン</td><td>強い手のみ（AA〜TT、AKs〜ATs等）</td></tr>
+        <tr><td>BTNオープン</td><td>広いレンジ（全ハンドの約45〜50%）</td></tr>
+        <tr><td>3ベット</td><td>プレミアム＋ブラフ用スーテッドコネクター</td></tr>
+        <tr><td>コールド4ベット</td><td>ほぼAA/KK（非常に強い）</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">ボードテクスチャとの組み合わせ</div>
+    <p>例：BTN vs BB、フロップ <strong>A♠ 7♦ 2♣</strong>（ドライボード）</p>
+    <hr class="divider">
+    <h3>BTNがベット（CB）してきた場合</h3>
+    <div class="hand-tags">
+      <span class="hand-tag tag-premium">Aペア強い</span>
+      <span class="hand-tag tag-good">A7s</span>
+      <span class="hand-tag tag-good">A2s</span>
+      <span class="hand-tag tag-good">77</span>
+      <span class="hand-tag tag-good">22（セット）</span>
+      <span class="hand-tag tag-marginal">バックドアドロー（ブラフ）</span>
+    </div>
+    <hr class="divider">
+    <h3>BBがチェックレイズしてきた場合</h3>
+    <div class="rule red">⚠️ 強いレンジに偏る。A7s・A2s・セット（77・22）が多い。この場合は慎重に。</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">ブロッカーとは</div>
+    <p>自分が持っている手が、相手の持てる手を物理的に制限する効果のこと。</p>
+    <hr class="divider">
+    <ul>
+      <li>自分が<strong>Aを持っている</strong> → 相手がAAやAKを持つ確率が下がる</li>
+      <li>自分が<strong>K♠を持っている</strong> → 相手のナッツフラッシュ（スペードフラッシュ）の確率が下がる</li>
+    </ul>
+    <div class="note">ブラフをする際に「相手のナッツをブロックしているか」を確認するのがプロの考え方です。</div>
+  </div>
+
+  <h2>GTOの基本原則</h2>
+  <div class="table-wrap">
+    <table>
+      <tr><th>原則</th><th>内容</th></tr>
+      <tr><td><strong>バランス</strong></td><td>バリューとブラフを適切な比率で混ぜる</td></tr>
+      <tr><td><strong>ポジション優位</strong></td><td>後ろの席ほどレンジを広げられる</td></tr>
+      <tr><td><strong>レンジ優位</strong></td><td>ボードに合ったレンジを持つ側が有利</td></tr>
+      <tr><td><strong>ブロッカー</strong></td><td>自分の手が相手のナッツを制限しているか</td></tr>
+      <tr><td><strong>MDF遵守</strong></td><td>一定頻度でコールしないとブラフが得になる</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ===== TAB 4: CALLS ===== -->
+<div id="tab-calls" class="section">
+  <h2>コール判断ガイド</h2>
+
+  <div class="rule">
+    💡 <strong>大原則：コールするならポジションがある席で</strong><br>
+    ポジションがない席では「3ベットして主導権を取るか、フォールド」の二択が基本。
+  </div>
+
+  <h3>オープンレイズへのコール可否</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>ポジション</th><th>コール</th><th>理由</th></tr>
+      <tr><td><strong>MP</strong></td><td><span class="tag-ng">❌ 基本NG</span></td><td>後ろにまだ人がいる。UTGのレンジが強い</td></tr>
+      <tr><td><strong>CO</strong></td><td><span class="tag-check">△ 限定的</span></td><td>強い手なら3ベット推奨。コールは中途半端</td></tr>
+      <tr><td><strong>BTN</strong></td><td><span class="tag-ok">✅ OK</span></td><td>常にポジションあり。コールの旨みが最大</td></tr>
+      <tr><td><strong>SB</strong></td><td><span class="tag-ng">❌ 基本NG</span></td><td>フロップ以降で必ず先に動かされる</td></tr>
+      <tr><td><strong>BB</strong></td><td><span class="tag-ok">✅ OK</span></td><td>1BB投資済み＋最後に行動できる</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">なぜSBはコールNGなのか</div>
+    <div class="rule red">
+      SBでコールすると…<br>
+      フロップ以降、<strong>毎回BBより先に動かされる</strong><br>
+      → 常に相手に情報を与えてから動く状態<br>
+      → ポジションの不利が長く続く
+    </div>
+    <p>GTO的には「3ベットして主導権を取る」か「フォールド」が正解。コールは基本的に損です。</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">BTNでコールできるハンド目安</div>
+    <p>（オープナーがUTGの場合）</p>
+    <div class="hand-tags" style="margin-top: 8px;">
+      <span class="hand-tag tag-good">77〜TT</span>
+      <span class="hand-tag tag-good">87s</span>
+      <span class="hand-tag tag-good">98s</span>
+      <span class="hand-tag tag-good">A7s〜</span>
+      <span class="hand-tag tag-marginal">AJo以下は3ベット or フォールド</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">BBでコールできるハンド目安</div>
+    <p>（オープナーがUTGの場合）</p>
+    <div class="hand-tags" style="margin-top: 8px;">
+      <span class="hand-tag tag-good">スーテッド全般</span>
+      <span class="hand-tag tag-good">ポケットペア全般</span>
+      <span class="hand-tag tag-marginal">A2o以上</span>
+    </div>
+    <div class="note">⚠️ UTGのレンジは強いので、K9o・Q8oなどは状況次第。オープナーが弱い席（BTN等）なら更に広くディフェンスできます。</div>
+  </div>
+
+  <h2>MDF（最低ディフェンス頻度）</h2>
+  <div class="card">
+    <div class="card-title">ブラフを許さないための最低ライン</div>
+    <p>相手がベットしてきた時、一定頻度でコール or レイズしないと「ブラフが常に得」になってしまいます。</p>
+    <div class="table-wrap">
+      <table>
+        <tr><th>相手のベットサイズ</th><th>必要なディフェンス頻度</th></tr>
+        <tr><td>ポットの33%</td><td>約75%</td></tr>
+        <tr><td>ポットの50%（ハーフ）</td><td>約67%</td></tr>
+        <tr><td>ポットの75%</td><td>約57%</td></tr>
+        <tr><td>ポットの100%（ポット）</td><td>約50%</td></tr>
+      </table>
+    </div>
+    <div class="note">📌 計算式：MDF = ポット ÷（ポット + ベット額）</div>
+  </div>
+</div>
+
+<!-- ===== TAB 6: PUSH/FOLD ===== -->
+<div id="tab-pushfold" class="section">
+  <h2>Push/Fold チャート</h2>
+  <p>スタックが<strong>20BB以下</strong>になったら、オールイン（Push）かフォールド（Fold）の2択で判断します。ポジションとスタック数を選んでください。</p>
+
+  <div class="rule" style="margin-bottom:14px;">
+    💡 <strong>使い方</strong>：自分のスタック数を選び、自分のポジションのセルを確認。<span style="color:#4caf82;font-weight:700">緑＝Pushしていい手</span>、<span style="color:#3a4255;font-weight:700">暗い＝Fold</span>
+  </div>
+
+  <!-- Stack size selector -->
+  <div class="pf-stack-selector">
+    <div class="pf-stack-label">スタック数を選択</div>
+    <div class="pf-stack-btns">
+      <button class="pf-btn active" onclick="switchPF(this,5)">5BB</button>
+      <button class="pf-btn" onclick="switchPF(this,8)">8BB</button>
+      <button class="pf-btn" onclick="switchPF(this,10)">10BB</button>
+      <button class="pf-btn" onclick="switchPF(this,12)">12BB</button>
+      <button class="pf-btn" onclick="switchPF(this,15)">15BB</button>
+      <button class="pf-btn" onclick="switchPF(this,20)">20BB</button>
+    </div>
+  </div>
+
+  <!-- Info bar -->
+  <div id="pf-info-bar" class="pos-info-bar" style="border-color:#4caf82;">
+    <div id="pf-info-name" class="pos-info-name" style="color:#4caf82;">5BB <span>スタック時のPush範囲</span></div>
+    <div id="pf-info-sub" class="pos-info-rate" style="color:#8892a4;">緑のセルはどのポジションからもPush推奨</div>
+  </div>
+
+  <!-- Position tabs inside Push/Fold -->
+  <div class="pf-pos-selector">
+    <button class="pf-pos-btn active" onclick="switchPFPos(this,'utg')"><span style="background:#e05252" class="pos-dot"></span>UTG</button>
+    <button class="pf-pos-btn" onclick="switchPFPos(this,'mp')"><span style="background:#e07c3a" class="pos-dot"></span>MP</button>
+    <button class="pf-pos-btn" onclick="switchPFPos(this,'co')"><span style="background:#c9a84c" class="pos-dot"></span>CO</button>
+    <button class="pf-pos-btn" onclick="switchPFPos(this,'btn')"><span style="background:#4caf82" class="pos-dot"></span>BTN</button>
+    <button class="pf-pos-btn" onclick="switchPFPos(this,'sb')"><span style="background:#5b8dee" class="pos-dot"></span>SB</button>
+  </div>
+
+  <!-- Legend -->
+  <div class="range-legend" style="margin-bottom:10px;">
+    <span class="legend-item"><span class="legend-dot" style="background:#4caf82"></span>Push（オールイン）</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#1e2330"></span>Fold</span>
+  </div>
+
+  <!-- Grid -->
+  <div class="range-wrap">
+    <table class="range-table" id="pf-range-table"></table>
+  </div>
+
+  <div id="pf-tip-block" class="pos-tip-block" style="margin-top:12px;"></div>
+
+  <!-- Notes -->
+  <div class="card" style="margin-top:16px;">
+    <div class="card-title">⚠️ Push/Foldチャートの注意点</div>
+    <ul style="padding-left:18px;">
+      <li style="font-size:13px;margin-bottom:6px;line-height:1.65;">このチャートは<strong>Nash均衡</strong>（誰も戦略を変えることで得をできない状態）を基準にしています</li>
+      <li style="font-size:13px;margin-bottom:6px;line-height:1.65;">相手がコールしすぎる場合は<span style="color:var(--red);font-weight:700">Pushレンジを絞る</span>、コールしなさすぎる場合は<span style="color:var(--green);font-weight:700">Pushレンジを広げる</span>のが実践的な調整</li>
+      <li style="font-size:13px;margin-bottom:6px;line-height:1.65;">BBは強制投資があるため、相手のPushに対して広くコールできます（別途「Callチャート」が存在）</li>
+      <li style="font-size:13px;line-height:1.65;">トーナメントでは<strong>ICM（賞金額の期待値）</strong>も考慮する必要があり、バブル付近ではさらに絞ることが多い</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ===== TAB 5: GLOSSARY ===== -->
+<div id="tab-glossary" class="section">
+  <h2>用語集</h2>
+
+  <div class="card">
+    <div class="glossary-item">
+      <div class="glossary-term">GTO（ジーティーオー）</div>
+      <div class="glossary-def">Game Theory Optimal。ゲーム理論的に最適な戦略。どんな相手にも長期的に損をしない「搾取されないプレイスタイル」のこと。</div>
+    </div>
+    <div class="glossary-item">
+      <div class="glossary-term">ハンド</div>
+      <div class="glossary-def">自分の手札2枚のこと。「AKs」「89o」などと表記する。</div>
+    </div>
+    <div class="glossary-item">
+      <div class="glossary-term">s（スーテッド）</div>
+      <div class="glossary-def">手札2枚が同じマーク（スート）のこと。フラッシュを狙いやすく価値が上がる。AKsはAとKが同じマーク。</div>
+    </div>
+    <div class="glossary-item">
+      <div class="glossary-term">o（オフスーツ）</div>
+      <div class="glossary-def">手札2枚が異なるマークのこと。AKoはAとKが別々のマーク。スーテッドより価値が下がる。</div>
+    </div>
+    <div class="glossary-item">
+      <div class="glossary-term">レンジ</div>
+      <div class="glossary-def">「この状況でありえるハンドの集合」のこと。1枚のハンドではなく、幅を持って考えるのがポイント。</div>
+    </div>
+    <div class="glossary-item">
+      <div class="glossary-term">ポジション</div>
+      <div class="glossary-def">テーブルでの座席位置。後から行動できるほど有利。UTG（最も不利）→ BTN（最も有利）の順。</div>
+    </div>
+    <div class="glossary-item">
+      <div class="glossary-term">オープンレイズ</div>
+      <div class="glossary-def">誰もベットしていない状態から最初にベットすること。</div>
+    </div>
+    <div class="glossary-item">
+      <div class="glossary-term">3ベット</div>
+      <div class="glossary-def">オープンレイズに対してさらに上乗せしてベットすること。強い手またはブラフで使う。</div>
+    </div>
+    <div class="glossary-item">
+      <div class="glossary-term">CB（コンティニュエーションベット）</div>
+      <div class="glossary-def">プリフロップでオープンした人が、フロップでも続けてベットすること。</div>
+    </div>
+    <div class="glossary-item">
+      <div class="glossary-term">インプライドオッズ</div>
+      <div class="glossary-def">「今は弱いけど、強い手になったときに回収できる金額」の期待値。スタックが深いほど高くなる。</div>
+    </div>
+    <div class="glossary-item">
+      <div class="glossary-term">エフェクティブスタック（実効スタック）</div>
+      <div class="glossary-def">自分と相手のチップのうち少ない方の金額。実際に動かせるお金はこちらで決まる。</div>
+    </div>
+    <div class="glossary-item">
+      <div class="glossary-term">ドミネート</div>
+      <div class="glossary-def">同じ役を作っても相手に負けている状態。例：AJo vs AKo → Aペアを作っても負ける。</div>
+    </div>
+    <div class="glossary-item">
+      <div class="glossary-term">MDF（エムディーエフ）</div>
+      <div class="glossary-def">Minimum Defense Frequency。相手のブラフを許さないために必要な最低コール・レイズ頻度。</div>
+    </div>
+    <div class="glossary-item">
+      <div class="glossary-term">ブロッカー</div>
+      <div class="glossary-def">自分の手が相手の持てる強い手を物理的に減らす効果。Aを持っていると相手のAAやAKの確率が下がる。</div>
+    </div>
+    <div class="glossary-item">
+      <div class="glossary-term">セットマイニング</div>
+      <div class="glossary-def">小さいポケットペアでコールして、フロップで3枚目のペア（セット）になることを狙う戦略。ディープスタック時に有効。</div>
+    </div>
+    <div class="glossary-item">
+      <div class="glossary-term">スーテッドコネクター</div>
+      <div class="glossary-def">同じマークで連続した数字の手（87s、98sなど）。ストレートとフラッシュの両方を狙えるが、まず育てる必要がある。</div>
+    </div>
+    <div class="glossary-item">
+      <div class="glossary-term">マルチウェイ</div>
+      <div class="glossary-def">3人以上でポットを争う状況。スーテッドコネクターや小ペアの価値が上がりやすい。</div>
+    </div>
+    <div class="glossary-item">
+      <div class="glossary-term">エクスプロイト戦略</div>
+      <div class="glossary-def">GTOからあえてズレて、相手の特定のミスや癖を突く戦略。相手の弱点がわかっているときに有効。</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function showTab(name) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ============================================================
+  // Hand range data
+  // r-premium / r-ok / r-3bet / r-marginal / r-fold
+  // ============================================================
+  const RANKS = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
+
+  const POS_META = {
+    utg:  { label:'🔴 UTG', jp:'アンダー・ザ・ガン', rate:'オープン率 〜15%', rateColor:'#e05252',
+            tip:'💡 とにかく絞る。「強い手しか使わない」と決めることで後ろの人に圧力をかけられます。' },
+    mp:   { label:'🟠 MP',  jp:'ミドルポジション',   rate:'オープン率 〜22%', rateColor:'#e07c3a',
+            tip:'💡 A8oはドミネートされやすい危険な手。89sもインプライドオッズが合わないのでCO・BTNまで待ちましょう。' },
+    co:   { label:'🟡 CO',  jp:'カットオフ',         rate:'オープン率 〜32%', rateColor:'#c9a84c',
+            tip:'💡 スーテッドコネクター（87s・76s等）も参加OK。インプライドオッズが合ってきます。' },
+    btn:  { label:'🟢 BTN', jp:'ボタン',             rate:'オープン率 〜50%', rateColor:'#4caf82',
+            tip:'💡 ポストフロップで必ず最後に動けるので、広く参加してもリカバリーできます。' },
+    sb:   { label:'🔵 SB',  jp:'スモールブラインド', rate:'オープン率 〜40%', rateColor:'#5b8dee',
+            tip:'⚠️ コールは基本NG。「3ベットして主導権を取る」か「フォールド」の二択が基本。' },
+    bb:   { label:'⚪ BB',  jp:'ビッグブラインド',   rate:'広くディフェンス可', rateColor:'#8892a4',
+            tip:'💡 MDF：相手のハーフポットベットに対し約67%の頻度でディフェンスしないとブラフを許します。UTGなど強い席のオープンには過信せず慎重に。' },
+  };
+
+  // セルクラスをポジションごとに定義
+  // 対角(i==j)=ポケットペア, i<j=スーテッド(上三角), i>j=オフスーツ(下三角)
+  function getRangeClass(pos, r1, r2, suited) {
+    // ポケットペア (r1==r2)
+    if (r1 === r2) {
+      const pairs = {
+        utg:  { premium:['A','K','Q','J','T'], ok:['9','8'],        marginal:[],                fold:['7','6','5','4','3','2'] },
+        mp:   { premium:['A','K','Q','J','T'], ok:['9','8','7'],    marginal:[],                fold:['6','5','4','3','2'] },
+        co:   { premium:['A','K','Q','J','T'], ok:['9','8','7','6','5'], marginal:[],           fold:['4','3','2'] },
+        btn:  { premium:['A','K','Q','J','T'], ok:['9','8','7','6','5'], marginal:['4','3','2'],fold:[] },
+        sb:   { premium:['A','K','Q'],         ok:[],               marginal:['J','T','9','8','7'], fold:['6','5','4','3','2'] },
+        bb:   { premium:['A','K','Q','J','T'], ok:['9','8','7','6','5'], marginal:['4','3','2'],fold:[] },
+      };
+      const p = pairs[pos];
+      if (p.premium.includes(r1)) return 'r-premium';
+      if (p.ok.includes(r1))      return 'r-ok';
+      if (p.marginal.includes(r1))return 'r-marginal';
+      return 'r-fold';
+    }
+
+    // スーテッドハンド (上三角: i<j → r1が大きい)
+    if (suited) {
+      const hi = r1, lo = r2;
+      const ri = RANKS.indexOf(hi), rj = RANKS.indexOf(lo);
+      // 各ポジションのスーテッドOKリスト定義
+      const suitedRanges = {
+        utg: (hi,lo,ri,rj) => {
+          if (hi==='A' && ['K','Q','J','T'].includes(lo)) return 'r-premium';
+          if (hi==='A' && lo==='K') return 'r-premium';
+          if (hi==='K' && ['Q','J'].includes(lo)) return 'r-ok';
+          if (hi==='Q' && lo==='J') return 'r-ok';
+          return 'r-fold';
+        },
+        mp: (hi,lo,ri,rj) => {
+          if (hi==='A' && lo==='K') return 'r-premium';
+          if (hi==='A' && ['Q','J','T','9'].includes(lo)) return 'r-ok';
+          if (hi==='K' && ['Q','J','T'].includes(lo)) return 'r-ok';
+          if (hi==='Q' && ['J','T'].includes(lo)) return 'r-ok';
+          if (hi==='J' && lo==='T') return 'r-ok';
+          if (hi==='T' && lo==='9') return 'r-ok';
+          return 'r-fold';
+        },
+        co: (hi,lo,ri,rj) => {
+          if (hi==='A' && lo==='K') return 'r-premium';
+          if (hi==='A') return 'r-ok';
+          if (hi==='K' && ['Q','J','T','9'].includes(lo)) return 'r-ok';
+          if (hi==='Q' && ['J','T','9'].includes(lo)) return 'r-ok';
+          if (hi==='J' && ['T','9'].includes(lo)) return 'r-ok';
+          if (hi==='T' && ['9','8'].includes(lo)) return 'r-ok';
+          if (hi==='9' && lo==='8') return 'r-ok';
+          if (hi==='8' && lo==='7') return 'r-ok';
+          if (hi==='7' && lo==='6') return 'r-ok';
+          return 'r-fold';
+        },
+        btn: (hi,lo,ri,rj) => {
+          if (hi==='A' && lo==='K') return 'r-premium';
+          if (hi==='A') return 'r-ok';
+          if (hi==='K' && ['Q','J','T','9','8','7'].includes(lo)) return 'r-ok';
+          if (hi==='Q' && ['J','T','9','8'].includes(lo)) return 'r-ok';
+          if (hi==='J' && ['T','9','8'].includes(lo)) return 'r-ok';
+          if (hi==='T' && ['9','8','7'].includes(lo)) return 'r-ok';
+          if (hi==='9' && ['8','7'].includes(lo)) return 'r-ok';
+          if (hi==='8' && ['7','6'].includes(lo)) return 'r-ok';
+          if (hi==='7' && ['6','5'].includes(lo)) return 'r-ok';
+          if (hi==='6' && lo==='5') return 'r-ok';
+          if (hi==='5' && lo==='4') return 'r-ok';
+          return 'r-fold';
+        },
+        sb: (hi,lo,ri,rj) => {
+          if (hi==='A' && lo==='K') return 'r-premium';
+          if (hi==='A' && ['Q','J','T'].includes(lo)) return 'r-3bet';
+          if (hi==='K' && ['Q','J'].includes(lo)) return 'r-3bet';
+          if (hi==='A' && ['9','8','7','6','5','4','3','2'].includes(lo)) return 'r-fold';
+          return 'r-fold';
+        },
+        bb: (hi,lo,ri,rj) => {
+          if (hi==='A') return 'r-ok';
+          if (hi==='K' && ['Q','J','T','9'].includes(lo)) return 'r-ok';
+          if (hi==='Q' && ['J','T','9'].includes(lo)) return 'r-ok';
+          if (hi==='J' && ['T','9'].includes(lo)) return 'r-ok';
+          if (hi==='T' && ['9','8'].includes(lo)) return 'r-ok';
+          if (hi==='9' && ['8','7'].includes(lo)) return 'r-ok';
+          if (hi==='8' && lo==='7') return 'r-ok';
+          if (hi==='7' && lo==='6') return 'r-ok';
+          if (hi==='6' && lo==='5') return 'r-ok';
+          if (hi==='5' && lo==='4') return 'r-ok';
+          return 'r-fold';
+        },
+      };
+      return suitedRanges[pos](hi, lo, ri, rj);
+    }
+
+    // オフスーツ (下三角: i>j → r2が大きい)
+    else {
+      const hi = r2, lo = r1; // 下三角はr2が列(大きい)
+      const offsuitRanges = {
+        utg: (hi,lo) => {
+          if (hi==='A' && lo==='K') return 'r-premium';
+          if (hi==='A' && lo==='Q') return 'r-ok';
+          return 'r-fold';
+        },
+        mp: (hi,lo) => {
+          if (hi==='A' && lo==='K') return 'r-premium';
+          if (hi==='A' && ['Q','J'].includes(lo)) return 'r-ok';
+          if (hi==='K' && lo==='Q') return 'r-ok';
+          return 'r-fold';
+        },
+        co: (hi,lo) => {
+          if (hi==='A' && lo==='K') return 'r-premium';
+          if (hi==='A' && ['Q','J','T'].includes(lo)) return 'r-ok';
+          if (hi==='K' && ['Q','J'].includes(lo)) return 'r-ok';
+          if (hi==='Q' && lo==='J') return 'r-ok';
+          return 'r-fold';
+        },
+        btn: (hi,lo) => {
+          if (hi==='A' && lo==='K') return 'r-premium';
+          if (hi==='A') return 'r-ok';
+          if (hi==='K' && ['Q','J','T'].includes(lo)) return 'r-ok';
+          if (hi==='Q' && ['J','T'].includes(lo)) return 'r-ok';
+          if (hi==='J' && lo==='T') return 'r-ok';
+          return 'r-fold';
+        },
+        sb: (hi,lo) => {
+          if (hi==='A' && lo==='K') return 'r-premium';
+          if (hi==='A' && ['Q'].includes(lo)) return 'r-3bet';
+          if (hi==='K' && lo==='Q') return 'r-3bet';
+          return 'r-fold';
+        },
+        bb: (hi,lo) => {
+          if (hi==='A') return 'r-ok';
+          if (hi==='K' && ['Q','J','T','9'].includes(lo)) return 'r-ok';
+          if (hi==='Q' && ['J','T','9'].includes(lo)) return 'r-ok';
+          if (hi==='J' && ['T','9'].includes(lo)) return 'r-ok';
+          return 'r-fold';
+        },
+      };
+      return offsuitRanges[pos](hi, lo);
+    }
+  }
+
+  function buildGrid(pos) {
+    const table = document.getElementById('range-table');
+    if (!table) return;
+    table.innerHTML = '';
+    for (let i = 0; i < 13; i++) {
+      const tr = document.createElement('tr');
+      for (let j = 0; j < 13; j++) {
+        const td = document.createElement('td');
+        let label, cls;
+        if (i === j) {
+          label = RANKS[i] + RANKS[j];
+          cls = getRangeClass(pos, RANKS[i], RANKS[j], false);
+        } else if (i < j) {
+          // 上三角=スーテッド (行が小さい=ランクが高い)
+          label = RANKS[i] + RANKS[j] + 's';
+          cls = getRangeClass(pos, RANKS[i], RANKS[j], true);
+        } else {
+          // 下三角=オフスーツ
+          label = RANKS[j] + RANKS[i] + 'o';
+          cls = getRangeClass(pos, RANKS[i], RANKS[j], false);
+        }
+        td.textContent = label;
+        td.className = cls;
+        tr.appendChild(td);
+      }
+      table.appendChild(tr);
+    }
+    // Info bar更新
+    const meta = POS_META[pos];
+    document.getElementById('pos-info-name').innerHTML = meta.label + ' <span>' + meta.jp + '</span>';
+    document.getElementById('pos-info-rate').textContent = meta.rate;
+    document.getElementById('pos-info-rate').style.color = meta.rateColor;
+    document.getElementById('pos-info-bar').style.borderColor = meta.rateColor;
+    document.getElementById('pos-info-tip') && (document.getElementById('pos-info-tip').textContent = meta.tip);
+    const tipBlock = document.getElementById('pos-tip-block');
+    if (tipBlock) tipBlock.textContent = meta.tip;
+  }
+
+  function switchPos(btn, pos) {
+    document.querySelectorAll('.pos-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    buildGrid(pos);
+  }
+
+
+
+  // ============================================================
+  // Stack range data
+  // ショート/標準/ディープ別にハンドの評価を返す
+  // r-premium / r-ok / r-3bet / r-marginal / r-fold
+  // ここでは:
+  //   r-premium = ゴールド（プレミアム・価値最大）
+  //   r-ok      = グリーン（価値高い）
+  //   r-3bet    = ブルー（普通・標準）
+  //   r-marginal= オレンジ（過信注意・旨みなし）
+  //   r-fold    = 暗（価値なし）
+  // ============================================================
+  const STACK_META = {
+    short: {
+      label: '🔴 ショートスタック', sub: '〜40BB',
+      rate: 'プリフロップの判断がほぼ全て', rateColor: '#e05252',
+      tip: '💡 今すぐ強い手で戦う。小さいペアやコネクターは旨みがないのでフォールド推奨。20BB以下ではPush/Foldチャートを参照。'
+    },
+    mid: {
+      label: '🟡 標準スタック', sub: '40〜100BB',
+      rate: '最も一般的な状況', rateColor: '#c9a84c',
+      tip: '💡 教科書通りのGTOレンジで動く。ポジション別レンジタブのハンドレンジがそのまま使えます。'
+    },
+    deep: {
+      label: '🟢 ディープスタック', sub: '150BB〜',
+      rate: '「育てる手」の価値が急上昇', rateColor: '#4caf82',
+      tip: '💡 ナッツになれる手を優遇する。セット・フラッシュ・ストレート完成時に大量回収できるのでコネクター・小ペアの価値が高い。'
+    },
+  };
+
+  function getStackClass(stack, r1, r2, suited) {
+    const ri = RANKS.indexOf(r1);
+    const rj = RANKS.indexOf(r2);
+
+    // ポケットペア
+    if (r1 === r2) {
+      if (stack === 'short') {
+        if (['A','K','Q','J','T'].includes(r1)) return 'r-premium';
+        if (['9','8'].includes(r1))             return 'r-3bet';   // 普通
+        if (['7','6'].includes(r1))             return 'r-marginal';
+        return 'r-fold'; // 55以下
+      }
+      if (stack === 'mid') {
+        if (['A','K','Q','J','T'].includes(r1)) return 'r-premium';
+        if (['9','8','7'].includes(r1))         return 'r-3bet';
+        if (['6','5'].includes(r1))             return 'r-3bet';
+        if (['4','3','2'].includes(r1))         return 'r-marginal';
+        return 'r-fold';
+      }
+      if (stack === 'deep') {
+        if (['A','K','Q','J','T'].includes(r1)) return 'r-premium';
+        if (['9','8','7'].includes(r1))         return 'r-3bet';
+        if (['6','5'].includes(r1))             return 'r-ok';     // 価値高い
+        if (['4','3','2'].includes(r1))         return 'r-ok';
+        return 'r-fold';
+      }
+    }
+
+    // スーテッド（上三角: ri < rj）
+    if (suited) {
+      const hi = r1, lo = r2;
+      if (stack === 'short') {
+        if (hi==='A' && lo==='K') return 'r-premium';
+        if (hi==='A' && ['Q','J','T'].includes(lo)) return 'r-3bet';
+        if (hi==='K' && ['Q','J'].includes(lo))     return 'r-3bet';
+        if (hi==='Q' && lo==='J')                   return 'r-3bet';
+        // コネクター系は旨みなし
+        if (['T','9','8','7','6','5'].includes(hi)) return 'r-fold';
+        return 'r-marginal';
+      }
+      if (stack === 'mid') {
+        if (hi==='A' && lo==='K') return 'r-premium';
+        if (hi==='A')             return 'r-3bet';
+        if (hi==='K' && ['Q','J','T','9'].includes(lo)) return 'r-3bet';
+        if (hi==='Q' && ['J','T','9'].includes(lo))     return 'r-3bet';
+        if (hi==='J' && ['T','9'].includes(lo))         return 'r-3bet';
+        if (hi==='T' && ['9','8'].includes(lo))         return 'r-3bet';
+        if (hi==='9' && lo==='8')                       return 'r-3bet';
+        if (hi==='8' && lo==='7')                       return 'r-3bet';
+        if (hi==='7' && lo==='6')                       return 'r-3bet';
+        return 'r-marginal';
+      }
+      if (stack === 'deep') {
+        if (hi==='A' && lo==='K') return 'r-premium';
+        if (hi==='A')             return 'r-3bet';
+        if (hi==='K' && ['Q','J','T','9'].includes(lo)) return 'r-3bet';
+        if (hi==='Q' && ['J','T','9'].includes(lo))     return 'r-3bet';
+        if (hi==='J' && ['T','9'].includes(lo))         return 'r-3bet';
+        if (hi==='T' && ['9','8'].includes(lo))         return 'r-ok';
+        if (hi==='9' && lo==='8')                       return 'r-ok';
+        if (hi==='8' && lo==='7')                       return 'r-ok';
+        if (hi==='7' && lo==='6')                       return 'r-ok';
+        if (hi==='6' && lo==='5')                       return 'r-ok';
+        if (hi==='5' && lo==='4')                       return 'r-ok';
+        return 'r-marginal';
+      }
+    }
+
+    // オフスーツ（下三角: ri > rj → hi=r2, lo=r1）
+    else {
+      const hi = r2, lo = r1;
+      if (stack === 'short') {
+        if (hi==='A' && lo==='K') return 'r-premium';
+        if (hi==='A' && ['Q','J'].includes(lo)) return 'r-3bet';
+        if (hi==='K' && lo==='Q')               return 'r-3bet';
+        if (hi==='A' && lo==='T')               return 'r-marginal';
+        return 'r-fold';
+      }
+      if (stack === 'mid') {
+        if (hi==='A' && lo==='K') return 'r-premium';
+        if (hi==='A' && ['Q','J','T'].includes(lo)) return 'r-3bet';
+        if (hi==='K' && ['Q','J'].includes(lo))     return 'r-3bet';
+        if (hi==='Q' && lo==='J')                   return 'r-3bet';
+        if (hi==='A' && ['9','8','7'].includes(lo)) return 'r-marginal';
+        return 'r-fold';
+      }
+      if (stack === 'deep') {
+        if (hi==='A' && lo==='K') return 'r-premium';
+        if (hi==='A' && ['Q','J','T'].includes(lo)) return 'r-3bet';
+        if (hi==='K' && ['Q','J'].includes(lo))     return 'r-3bet';
+        if (hi==='Q' && lo==='J')                   return 'r-3bet';
+        // ディープでもオフスーツコネクターは旨みなし
+        if (hi==='A' && ['9','8','7'].includes(lo)) return 'r-marginal';
+        return 'r-fold';
+      }
+    }
+    return 'r-fold';
+  }
+
+  function buildStackGrid(stack) {
+    const table = document.getElementById('stack-range-table');
+    if (!table) return;
+    table.innerHTML = '';
+    for (let i = 0; i < 13; i++) {
+      const tr = document.createElement('tr');
+      for (let j = 0; j < 13; j++) {
+        const td = document.createElement('td');
+        let label, cls;
+        if (i === j) {
+          label = RANKS[i] + RANKS[j];
+          cls = getStackClass(stack, RANKS[i], RANKS[j], false);
+        } else if (i < j) {
+          label = RANKS[i] + RANKS[j] + 's';
+          cls = getStackClass(stack, RANKS[i], RANKS[j], true);
+        } else {
+          label = RANKS[j] + RANKS[i] + 'o';
+          cls = getStackClass(stack, RANKS[i], RANKS[j], false);
+        }
+        td.textContent = label;
+        td.className = cls;
+        tr.appendChild(td);
+      }
+      table.appendChild(tr);
+    }
+    // Info bar更新
+    const meta = STACK_META[stack];
+    document.getElementById('stack-info-name').innerHTML = meta.label + ' <span>' + meta.sub + '</span>';
+    document.getElementById('stack-info-rate').textContent = meta.rate;
+    document.getElementById('stack-info-rate').style.color = meta.rateColor;
+    document.getElementById('stack-info-bar').style.borderColor = meta.rateColor;
+    const tb = document.getElementById('stack-tip-block');
+    if (tb) tb.textContent = meta.tip;
+  }
+
+  function switchStack(btn, stack) {
+    document.querySelectorAll('.stack-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    // 詳細パネル切り替え
+    ['short','mid','deep'].forEach(s => {
+      const el = document.getElementById('stack-' + s);
+      if (el) el.classList.toggle('hidden', s !== stack);
+    });
+    buildStackGrid(stack);
+  }
+
+
+  // ============================================================
+  // Push/Fold data
+  // Nash均衡ベースのPushレンジ（スタック×ポジション）
+  // ============================================================
+
+  // ハンドを強さ順インデックスで管理
+  // ポケットペア: AA=0, KK=1 ... 22=12
+  // スーテッド:  AKs=13, AQs=14 ... 23s=90
+  // オフスーツ:  AKo=91, AQo=92 ... 32o=168
+
+  // Push可能ハンドをセットで定義
+  // 各エントリは [スタック, ポジション] → Pushするハンドのセット
+
+  const PF_RANKS = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
+
+  // ハンド文字列 → pushかどうか判定
+  // データはNash Push/Foldチャートに基づく近似値
+  function isPush(stack, pos, r1, r2, suited) {
+    const i = PF_RANKS.indexOf(r1);
+    const j = PF_RANKS.indexOf(r2);
+
+    // --- ポケットペア ---
+    if (r1 === r2) {
+      const rank = i; // 0=AA, 12=22
+      const thresholds = {
+        utg:  { 5:8, 8:6, 10:5, 12:4, 15:3, 20:2 }, // 22=12, なので数字が大きいほど弱い
+        mp:   { 5:8, 8:7, 10:6, 12:5, 15:4, 20:3 },
+        co:   { 5:10, 8:9, 10:8, 12:7, 15:6, 20:4 },
+        btn:  { 5:12, 8:12, 10:11, 12:10, 15:9, 20:7 },
+        sb:   { 5:12, 8:12, 10:12, 12:11, 15:10, 20:8 },
+      };
+      return rank <= (thresholds[pos][stack] ?? 4);
+    }
+
+    // --- スーテッド ---
+    if (suited) {
+      const hi = r1, lo = r2;
+      const hi_i = i, lo_j = j;
+      // ギャップ（数値差）
+      const gap = lo_j - hi_i;
+
+      const pushSuited = {
+        5:  (hi,lo,hi_i,lo_j) => hi_i <= 3 || (hi==='A') || (hi_i<=5 && lo_j-hi_i<=1),
+        8:  (hi,lo,hi_i,lo_j) => hi==='A' || (hi_i<=2 && lo_j<=5) || (hi_i<=4 && lo_j-hi_i<=1) || (hi==='K'&&lo_j<=3),
+        10: (hi,lo,hi_i,lo_j) => hi==='A' || (hi_i<=1 && lo_j<=4) || (hi_i<=3 && lo_j-hi_i<=1) || (hi==='K'&&lo_j<=2) || (hi==='Q'&&lo==='J'),
+        12: (hi,lo,hi_i,lo_j) => hi==='A' || (hi_i<=1 && lo_j<=3) || (hi_i<=2 && lo_j-hi_i<=1) || (hi==='K'&&lo_j<=2),
+        15: (hi,lo,hi_i,lo_j) => hi==='A' || (hi_i==0 && lo_j<=2) || (hi_i<=1 && lo_j<=3 && lo_j-hi_i<=1) || (hi==='K'&&lo==='Q'),
+        20: (hi,lo,hi_i,lo_j) => (hi==='A'&&lo_j<=2) || (hi_i==0&&lo_j<=1),
+      };
+      // ポジション補正
+      const posMod = { utg:0, mp:1, co:2, btn:3, sb:3 };
+      const mod = posMod[pos] || 0;
+      const effectiveStack = Math.max(5, stack - mod * 2);
+      const nearest = [5,8,10,12,15,20].reduce((a,b) => Math.abs(b-effectiveStack)<Math.abs(a-effectiveStack)?b:a);
+      return pushSuited[nearest](hi, lo, hi_i, lo_j);
+    }
+
+    // --- オフスーツ ---
+    else {
+      const hi = r2, lo = r1; // 下三角: r2が大きい
+      const hi_i = PF_RANKS.indexOf(hi);
+      const lo_j = PF_RANKS.indexOf(lo);
+
+      const pushOffsuit = {
+        5:  (hi,lo,hi_i,lo_j) => hi==='A' || (hi_i<=1 && lo_j<=2) || (hi_i<=3 && lo_j-hi_i<=1),
+        8:  (hi,lo,hi_i,lo_j) => (hi==='A'&&lo_j<=6) || (hi_i<=1&&lo_j<=3) || (hi_i<=2&&lo_j-hi_i<=1),
+        10: (hi,lo,hi_i,lo_j) => (hi==='A'&&lo_j<=5) || (hi_i<=1&&lo_j<=2) || (hi==='K'&&lo==='Q'&&lo_j-hi_i<=1),
+        12: (hi,lo,hi_i,lo_j) => (hi==='A'&&lo_j<=4) || (hi_i==0&&lo_j<=2),
+        15: (hi,lo,hi_i,lo_j) => (hi==='A'&&lo_j<=3) || (hi_i==0&&lo_j<=1),
+        20: (hi,lo,hi_i,lo_j) => (hi==='A'&&lo_j<=2) || (hi_i==0&&lo_j==1),
+      };
+      const posMod = { utg:0, mp:1, co:2, btn:3, sb:3 };
+      const mod = posMod[pos] || 0;
+      const effectiveStack = Math.max(5, stack - mod * 2);
+      const nearest = [5,8,10,12,15,20].reduce((a,b) => Math.abs(b-effectiveStack)<Math.abs(a-effectiveStack)?b:a);
+      return pushOffsuit[nearest](hi, lo, hi_i, lo_j);
+    }
+  }
+
+  const PF_TIPS = {
+    5:  '5BBは事実上ほぼ全てのポジションで広くPush可能。強制的にPushを選ぶ局面が多くなります。',
+    8:  '8BBはまだ広くPushできますが、UTG・MPでは絞り始めます。Aハイ・ブロードウェイを中心に。',
+    10: '10BBはポジションの差が出始めます。BTN・SBなら広く、UTGはAT+・KQ+程度に絞りましょう。',
+    12: '12BBはポジション判断が重要。BTNなら広め、UTG・MPはかなり絞ってプレミアム中心に。',
+    15: '15BBは通常のプレイとPush/Foldの境界線。BTNは広めにPushできますが、UTGはほぼプレミアムのみ。',
+    20: '20BBはまだ通常戦略も可能なボーダーライン。プレミアムハンドのみPushを検討。',
+  };
+
+  let currentPFStack = 5;
+  let currentPFPos = 'utg';
+
+  function buildPFGrid() {
+    const table = document.getElementById('pf-range-table');
+    if (!table) return;
+    table.innerHTML = '';
+    let pushCount = 0;
+    for (let i = 0; i < 13; i++) {
+      const tr = document.createElement('tr');
+      for (let j = 0; j < 13; j++) {
+        const td = document.createElement('td');
+        let label, push;
+        if (i === j) {
+          label = PF_RANKS[i] + PF_RANKS[j];
+          push = isPush(currentPFStack, currentPFPos, PF_RANKS[i], PF_RANKS[j], false);
+        } else if (i < j) {
+          label = PF_RANKS[i] + PF_RANKS[j] + 's';
+          push = isPush(currentPFStack, currentPFPos, PF_RANKS[i], PF_RANKS[j], true);
+        } else {
+          label = PF_RANKS[j] + PF_RANKS[i] + 'o';
+          push = isPush(currentPFStack, currentPFPos, PF_RANKS[i], PF_RANKS[j], false);
+        }
+        if (push) pushCount++;
+        td.textContent = label;
+        td.className = push ? 'r-push' : 'r-fold';
+        tr.appendChild(td);
+      }
+      table.appendChild(tr);
+    }
+    // tip更新
+    const tb = document.getElementById('pf-tip-block');
+    if (tb) tb.textContent = '💡 ' + PF_TIPS[currentPFStack];
+    // カウント表示
+    const nameEl = document.getElementById('pf-info-name');
+    if (nameEl) nameEl.innerHTML = currentPFStack + 'BB <span>— ' + currentPFPos.toUpperCase() + ' Push範囲（' + pushCount + '通り）</span>';
+  }
+
+  function switchPF(btn, stack) {
+    currentPFStack = stack;
+    document.querySelectorAll('.pf-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    buildPFGrid();
+  }
+
+  function switchPFPos(btn, pos) {
+    currentPFPos = pos;
+    document.querySelectorAll('.pf-pos-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    buildPFGrid();
+  }
+
+  // 初期描画
+  window.addEventListener('DOMContentLoaded', () => {
+    buildGrid('utg');
+    buildStackGrid('short');
+    buildPFGrid();
+  });
+</script>
+</body>
+</html>
